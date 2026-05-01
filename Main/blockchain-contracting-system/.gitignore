@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+.next/
+out/
+build/
+
+# Blockchain & Security (CRITICAL)
+application/wallet/
+wallet/
+*.pem
+*.key
+*.crt
+*.pfx
+.env
+.env.local
+
+# OS Files
+.DS_Store
+Thumbs.db
+.vscode/

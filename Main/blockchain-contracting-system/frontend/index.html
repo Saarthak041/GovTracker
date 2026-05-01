@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GovProject Tracker | Blockchain Infrastructure</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="index.css">
+</head>
+<body>
+    <div class="background-orbs">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar glass-panel">
+            <div class="logo">
+                <div class="logo-icon"></div>
+                <h2>GovTracker</h2>
+            </div>
+            
+            <ul class="nav-links">
+                <li class="active" data-view="dashboard">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                    Dashboard
+                </li>
+                <li data-view="create-project">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"></path></svg>
+                    New Project
+                </li>
+                <li data-view="work-packages">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                    Work Packages
+                </li>
+                <li data-view="payments">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                    Payments
+                </li>
+            </ul>
+
+            <div class="network-status">
+                <div class="status-indicator online"></div>
+                <span>Fabric Network: Online</span>
+            </div>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <header class="top-bar">
+                <h1>Infrastructure Projects</h1>
+                <div class="user-profile">
+                    <div class="avatar">EA</div>
+                    <span>Employer Admin</span>
+                </div>
+            </header>
+
+            <!-- Views Container -->
+            <div id="view-dashboard" class="view active">
+                <div class="stats-row">
+                    <div class="stat-card glass-panel">
+                        <h3>Total Active Projects</h3>
+                        <div class="stat-value" id="stat-total-projects">0</div>
+                    </div>
+                    <div class="stat-card glass-panel">
+                        <h3>Total Value (USD)</h3>
+                        <div class="stat-value" id="stat-total-value">$0</div>
+                    </div>
+                    <div class="stat-card glass-panel">
+                        <h3>Network Nodes</h3>
+                        <div class="stat-value">17</div>
+                    </div>
+                </div>
+
+                <div class="projects-container">
+                    <div class="section-header">
+                        <h2>Recent Projects</h2>
+                        <button class="btn-primary" onclick="window.app.switchView('create-project')">Initialize Project</button>
+                    </div>
+                    <div id="projects-grid" class="projects-grid">
+                        <!-- Project Cards will be injected here via JS -->
+                        <div class="loading-spinner"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-create-project" class="view">
+                <div class="form-container glass-panel">
+                    <h2>Initialize New Smart Contract</h2>
+                    <p class="subtitle">Deploy a new infrastructure project to the Hyperledger Fabric network.</p>
+                    
+                    <form id="create-project-form">
+                        <div class="form-group">
+                            <label>Project ID</label>
+                            <input type="text" id="proj-id" placeholder="e.g. INFRA_002" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Project Name</label>
+                            <input type="text" id="proj-name" placeholder="Enter full project title" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea id="proj-desc" rows="4" placeholder="Detailed project scope" required></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Total Budget Value (USD)</label>
+                            <input type="number" id="proj-value" placeholder="e.g. 50000000" required>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="button" class="btn-secondary" onclick="window.app.switchView('dashboard')">Cancel</button>
+                            <button type="submit" class="btn-primary" id="btn-submit-project">Deploy to Blockchain</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Work Packages View -->
+            <div id="view-work-packages" class="view">
+                <div class="section-header">
+                    <h2>Work Packages</h2>
+                    <button class="btn-primary" onclick="window.app.switchView('submit-work-package')">Submit Work Package</button>
+                </div>
+                
+                <div class="form-group" style="max-width: 400px; margin-bottom: 24px;">
+                    <label>Select Project</label>
+                    <select id="wp-project-select" class="glass-input" onchange="window.app.fetchWorkPackages()" style="width: 100%; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--glass-border); border-radius: 8px; padding: 12px; color: white; font-family: inherit;">
+                        <option value="">-- Choose a Project --</option>
+                    </select>
+                </div>
+
+                <div id="work-packages-container" class="projects-grid">
+                    <!-- Work packages injected here -->
+                    <div class="glass-panel" style="padding: 30px; text-align: center; grid-column: 1 / -1;">
+                        <p style="color: var(--text-muted);">Select a project to view its work packages.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Work Package View -->
+            <div id="view-submit-work-package" class="view">
+                <div class="form-container glass-panel">
+                    <h2>Submit Work Package</h2>
+                    <p class="subtitle">Record completed work to the blockchain for payment approval.</p>
+                    
+                    <form id="submit-wp-form">
+                        <div class="form-group">
+                            <label>Target Project</label>
+                            <select id="submit-wp-project" required style="width: 100%; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--glass-border); border-radius: 8px; padding: 12px; color: white;">
+                                <option value="">-- Choose a Project --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Work Package ID</label>
+                            <input type="text" id="wp-id" placeholder="e.g. WP_001" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea id="wp-desc" rows="3" placeholder="What work was completed?" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>IPFS Hash (Evidence/Documents)</label>
+                            <input type="text" id="wp-ipfs" placeholder="QmXxx..." required>
+                        </div>
+                        <div style="display: flex; gap: 20px;">
+                            <div class="form-group" style="flex: 1;">
+                                <label>Quantity / Percentage</label>
+                                <input type="number" id="wp-qty" placeholder="e.g. 100" required>
+                            </div>
+                            <div class="form-group" style="flex: 1;">
+                                <label>Value Claimed (USD)</label>
+                                <input type="number" id="wp-value" placeholder="e.g. 500000" required>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="button" class="btn-secondary" onclick="window.app.switchView('work-packages')">Cancel</button>
+                            <button type="submit" class="btn-primary" id="btn-submit-wp">Submit to Ledger</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Payments View -->
+            <div id="view-payments" class="view">
+                <div class="section-header">
+                    <h2>Payments & Approvals</h2>
+                    <button class="btn-primary" onclick="window.app.switchView('approve-payment')">Approve Payment</button>
+                </div>
+                
+                <div class="form-group" style="max-width: 400px; margin-bottom: 24px;">
+                    <label>Select Project</label>
+                    <select id="pay-project-select" class="glass-input" onchange="window.app.fetchPayments()" style="width: 100%; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--glass-border); border-radius: 8px; padding: 12px; color: white;">
+                        <option value="">-- Choose a Project --</option>
+                    </select>
+                </div>
+
+                <div id="payments-container" class="projects-grid">
+                    <!-- Payments injected here -->
+                    <div class="glass-panel" style="padding: 30px; text-align: center; grid-column: 1 / -1;">
+                        <p style="color: var(--text-muted);">Select a project to view its payments.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Approve Payment View -->
+            <div id="view-approve-payment" class="view">
+                <div class="form-container glass-panel">
+                    <h2>Approve Payment</h2>
+                    <p class="subtitle">Approve a submitted work package and release funds.</p>
+                    
+                    <form id="approve-pay-form">
+                        <div class="form-group">
+                            <label>Target Project</label>
+                            <select id="approve-pay-project" required style="width: 100%; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--glass-border); border-radius: 8px; padding: 12px; color: white;">
+                                <option value="">-- Choose a Project --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Work Package ID</label>
+                            <input type="text" id="pay-wp-id" placeholder="e.g. WP_001" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Approved Amount (USD)</label>
+                            <input type="number" id="pay-amount" placeholder="e.g. 500000" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Remarks</label>
+                            <textarea id="pay-remarks" rows="3" placeholder="Approval remarks..." required></textarea>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="button" class="btn-secondary" onclick="window.app.switchView('payments')">Cancel</button>
+                            <button type="submit" class="btn-primary" id="btn-submit-pay">Approve & Record</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
