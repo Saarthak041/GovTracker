@@ -1,13 +1,71 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Activity, ShieldCheck, Maximize, AlertCircle, RefreshCw, Hexagon, Fingerprint, ActivitySquare, Shield, Globe2, X, Loader2 } from 'lucide-react';
+import { Activity, ShieldCheck, Maximize, AlertCircle, RefreshCw, Hexagon, Fingerprint, ActivitySquare, Shield, Globe2, X, Loader2, LogOut, User, Plus, Upload, CheckCircle2, Eye } from 'lucide-react';
+
+// Role-based access control permissions
+const ROLE_PERMISSIONS = {
+  employer: {
+    label: 'Government Authority',
+    canCreateProject: true,
+    canSubmitWork: false,
+    canCertifyWork: false,
+    canViewAll: true,
+    accentColor: '#00f2fe',
+  },
+  contractor: {
+    label: 'Contractor',
+    canCreateProject: false,
+    canSubmitWork: true,
+    canCertifyWork: false,
+    canViewAll: true,
+    accentColor: '#f97316',
+  },
+  engineer: {
+    label: 'Engineer / Auditor',
+    canCreateProject: false,
+    canSubmitWork: false,
+    canCertifyWork: true,
+    canViewAll: true,
+    accentColor: '#10b981',
+  },
+  citizen: {
+    label: 'Citizen',
+    canCreateProject: false,
+    canSubmitWork: false,
+    canCertifyWork: false,
+    canViewAll: true,
+    accentColor: '#8b5cf6',
+  },
+};
 
 export default function Dashboard() {
+  const router = useRouter();
   const [projects, setProjects] = useState([]);
   const [showProjects, setShowProjects] = useState(false);
   const [loadingProjects, setLoadingProjects] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const role = localStorage.getItem('govtracker_role');
+    const org = localStorage.getItem('govtracker_org');
+    const name = localStorage.getItem('govtracker_user');
+    if (!role) {
+      router.push('/login');
+      return;
+    }
+    setUser({ role, org, name });
+  }, [router]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('govtracker_role');
+    localStorage.removeItem('govtracker_org');
+    localStorage.removeItem('govtracker_user');
+    router.push('/login');
+  };
 
   const fetchProjects = async () => {
     setShowProjects(true);
@@ -16,7 +74,8 @@ export default function Dashboard() {
       const res = await fetch('http://localhost:3000/api/projects');
       const data = await res.json();
       if (data && data.data) {
-        setProjects(data.data);
+        const list = Array.isArray(data.data) ? data.data : (data.data.projects || []);
+        setProjects(list);
       } else {
         throw new Error('Invalid response');
       }
@@ -30,8 +89,23 @@ export default function Dashboard() {
     }
   };
 
+  if (!user) return null;
+
   return (
     <div className="min-h-screen relative overflow-hidden bg-[#02060f]">
+
+      {/* Top-right user badge */}
+      <div className="absolute top-6 right-6 z-30 flex items-center gap-3">
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-white/10 bg-white/[0.03]">
+          <User size={13} className="text-cyan-400" />
+          <span className="text-xs text-slate-300 font-medium">{user.name}</span>
+          <span className="text-[9px] text-slate-500 font-mono uppercase">({user.org})</span>
+        </div>
+        <button onClick={handleLogout} className="p-1.5 rounded-lg border border-white/10 hover:bg-white/5 transition-colors group" title="Logout">
+          <LogOut size={14} className="text-slate-500 group-hover:text-red-400 transition-colors" />
+        </button>
+      </div>
+      
       
       {/* Main Content Layout */}
       <div className="relative z-10 flex w-full min-h-screen">
@@ -59,10 +133,26 @@ export default function Dashboard() {
               A hybrid blockchain system for end-to-end tracking, verification, and transparent governance of infrastructure projects across India.
             </p>
 
-            <div className="flex gap-4 mb-12">
+            <div className="flex flex-wrap gap-3 mb-12">
               <button onClick={fetchProjects} className="btn-primary flex items-center gap-2 text-sm">
                 Explore Projects <Activity size={16} />
               </button>
+              {ROLE_PERMISSIONS[user.role]?.canCreateProject && (
+                <button onClick={() => { setShowProjects(true); setShowCreateForm(true); }} className="btn-secondary flex items-center gap-2 text-sm">
+                  Create Project <Plus size={16} />
+                </button>
+              )}
+              {ROLE_PERMISSIONS[user.role]?.canCertifyWork && (
+                <button onClick={fetchProjects} className="btn-secondary flex items-center gap-2 text-sm" style={{ borderColor: '#10b981', color: '#10b981' }}>
+                  Audit Projects <CheckCircle2 size={16} />
+                </button>
+              )}
+              {user.role === 'citizen' && (
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded border border-violet-500/20 bg-violet-500/5">
+                  <Eye size={14} className="text-violet-400" />
+                  <span className="text-[11px] text-violet-400 font-medium">View-Only Access</span>
+                </div>
+              )}
             </div>
           </motion.div>
 
@@ -314,7 +404,7 @@ export default function Dashboard() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {projects.map((p, i) => {
+                    {(Array.isArray(projects) ? projects : []).map((p, i) => {
                       const project = p.Record || p;
                       const statusColors = {
                         'INITIATED': 'text-cyan-400 bg-cyan-500/10 border-cyan-500/20',
@@ -363,12 +453,111 @@ export default function Dashboard() {
                               <p className="text-white font-semibold mt-0.5">{project.payments ? project.payments.length : 0}</p>
                             </div>
                           </div>
+                          {/* Role-based action buttons */}
+                          <div className="flex gap-2 mt-4 pt-3 border-t border-white/5">
+                            {ROLE_PERMISSIONS[user.role]?.canCreateProject && (
+                              <button onClick={() => { setShowProjects(false); router.push(`/project/${project.projectId}`); }} className="text-[10px] px-3 py-1.5 rounded border border-cyan-500/20 text-cyan-400 hover:bg-cyan-500/10 transition-colors flex items-center gap-1">
+                                <Eye size={10} /> View Details
+                              </button>
+                            )}
+                            {ROLE_PERMISSIONS[user.role]?.canSubmitWork && (
+                              <button className="text-[10px] px-3 py-1.5 rounded border border-orange-500/20 text-orange-400 hover:bg-orange-500/10 transition-colors flex items-center gap-1">
+                                <Upload size={10} /> Submit Work Package
+                              </button>
+                            )}
+                            {ROLE_PERMISSIONS[user.role]?.canCertifyWork && (
+                              <button className="text-[10px] px-3 py-1.5 rounded border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/10 transition-colors flex items-center gap-1">
+                                <CheckCircle2 size={10} /> Certify Work
+                              </button>
+                            )}
+                            {user.role === 'citizen' && (
+                              <span className="text-[10px] px-3 py-1.5 rounded border border-violet-500/20 text-violet-400 flex items-center gap-1">
+                                <Eye size={10} /> Read-Only
+                              </span>
+                            )}
+                          </div>
                         </motion.div>
                       );
                     })}
                   </div>
                 )}
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* CREATE PROJECT FORM MODAL */}
+      <AnimatePresence>
+        {showCreateForm && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center"
+            onClick={() => setShowCreateForm(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 30, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 30, scale: 0.95 }}
+              className="w-[520px] bg-[#060d1a]/95 border border-cyan-500/20 rounded-xl overflow-hidden shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between px-7 py-5 border-b border-white/5">
+                <div>
+                  <h2 className="text-lg font-bold text-white">Create New Project</h2>
+                  <p className="text-xs text-slate-400 mt-0.5">Submit to Hyperledger Fabric ledger</p>
+                </div>
+                <button onClick={() => setShowCreateForm(false)} className="p-2 rounded-lg hover:bg-white/5 transition-colors">
+                  <X size={18} className="text-slate-400" />
+                </button>
+              </div>
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                const form = e.target;
+                const body = {
+                  projectId: form.projectId.value,
+                  name: form.projectName.value,
+                  description: form.description.value,
+                  totalValue: Number(form.totalValue.value),
+                };
+                try {
+                  const res = await fetch('http://localhost:3000/api/projects', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                  });
+                  const data = await res.json();
+                  if (data.success) {
+                    alert('✅ Project created successfully on blockchain!');
+                    setShowCreateForm(false);
+                    fetchProjects();
+                  } else {
+                    alert('❌ Error: ' + (data.error || 'Unknown error'));
+                  }
+                } catch (err) {
+                  alert('❌ Could not connect to backend: ' + err.message);
+                }
+              }} className="p-7 space-y-5">
+                <div>
+                  <label className="block text-[11px] text-slate-400 uppercase tracking-wider font-semibold mb-1.5">Project ID</label>
+                  <input name="projectId" required placeholder="e.g. INFRA_002" className="w-full bg-[#02060f] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40 transition-all" />
+                </div>
+                <div>
+                  <label className="block text-[11px] text-slate-400 uppercase tracking-wider font-semibold mb-1.5">Project Name</label>
+                  <input name="projectName" required placeholder="e.g. Mumbai Metro Line 5" className="w-full bg-[#02060f] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40 transition-all" />
+                </div>
+                <div>
+                  <label className="block text-[11px] text-slate-400 uppercase tracking-wider font-semibold mb-1.5">Description</label>
+                  <textarea name="description" required rows={3} placeholder="Brief project description..." className="w-full bg-[#02060f] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40 transition-all resize-none" />
+                </div>
+                <div>
+                  <label className="block text-[11px] text-slate-400 uppercase tracking-wider font-semibold mb-1.5">Total Value (₹)</label>
+                  <input name="totalValue" type="number" required placeholder="e.g. 50000000000" className="w-full bg-[#02060f] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40 transition-all" />
+                </div>
+                <button type="submit" className="w-full py-3 rounded-lg bg-cyan-500 text-[#02060f] font-semibold text-sm hover:bg-cyan-400 transition-all flex items-center justify-center gap-2">
+                  <Plus size={16} /> Create Project on Blockchain
+                </button>
+              </form>
             </motion.div>
           </motion.div>
         )}

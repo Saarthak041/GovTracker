@@ -17,4 +17,10 @@ router.get('/:id/workpackages', projectController.getWorkPackages);
 router.post('/:id/payments', projectController.approvePayment);
 router.get('/:id/payments', projectController.getPayments);
 
+// Certification routes
+router.post('/:id/certify', projectController.certifyWork);
+
+// Audit trail
+router.get('/:id/history', projectController.getProjectHistory);
+
 module.exports = router;

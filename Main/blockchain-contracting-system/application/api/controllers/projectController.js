@@ -7,7 +7,20 @@ const fs = require('fs');
 // Helper function to get contract
 async function getContract(orgName, username) {
     const ccpPath = path.resolve(__dirname, '..', '..', 'config', `connection-${orgName.toLowerCase()}.json`);
+    const ccpDir = path.dirname(ccpPath);
     const ccp = JSON.parse(fs.readFileSync(ccpPath, 'utf8'));
+
+    // Resolve all relative TLS cert paths to absolute based on config dir
+    const resolvePaths = (obj) => {
+        for (const key of Object.keys(obj)) {
+            if (key === 'path' && typeof obj[key] === 'string' && !path.isAbsolute(obj[key])) {
+                obj[key] = path.resolve(ccpDir, obj[key]);
+            } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+                resolvePaths(obj[key]);
+            }
+        }
+    };
+    resolvePaths(ccp);
 
     const walletPath = path.join(__dirname, '..', '..', 'wallet');
     const wallet = await Wallets.newFileSystemWallet(walletPath);
@@ -22,16 +35,27 @@ async function getContract(orgName, username) {
     const network = await gateway.getNetwork('directchannel');
     const contract = network.getContract('project-management');
 
-    return { contract, gateway };
+    // Get all endorsing peers from the channel
+    const channel = network.getChannel();
+    const endorsers = channel.getEndorsers();
+
+    return { contract, gateway, network, endorsers };
+}
+
+// Helper: submit transaction to ALL endorsing peers (required by majority policy)
+async function submitToAll(contract, endorsers, fcn, ...args) {
+    const tx = contract.createTransaction(fcn);
+    tx.setEndorsingPeers(endorsers);
+    return tx.submit(...args);
 }
 
 // Create new project
 exports.createProject = async (req, res) => {
     try {
         const { projectId, name, description, totalValue } = req.body;
-        const { contract, gateway } = await getContract('Employer', 'admin-employer');
+        const { contract, gateway, endorsers } = await getContract('Employer', 'admin-employer');
 
-        await contract.submitTransaction(
+        await submitToAll(contract, endorsers,
             'createProject',
             projectId,
             name,
@@ -155,6 +179,44 @@ exports.getPayments = async (req, res) => {
 
         gateway.disconnect();
         res.json({ success: true, data: payments });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
+
+// Certify work (Engineer/Auditor)
+exports.certifyWork = async (req, res) => {
+    try {
+        const { workPackageId, certificationNotes } = req.body;
+        const { contract, gateway } = await getContract('Contractor', 'admin-contractor');
+
+        await contract.submitTransaction(
+            'certifyWork',
+            req.params.id,
+            workPackageId,
+            certificationNotes || 'Certified by auditor'
+        );
+
+        gateway.disconnect();
+        res.status(200).json({
+            success: true,
+            message: 'Work certified successfully'
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
+
+// Get project history (audit trail)
+exports.getProjectHistory = async (req, res) => {
+    try {
+        const { contract, gateway } = await getContract('Employer', 'admin-employer');
+
+        const result = await contract.evaluateTransaction('getProjectHistory', req.params.id);
+        const history = JSON.parse(result.toString());
+
+        gateway.disconnect();
+        res.json({ success: true, data: history });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
     }

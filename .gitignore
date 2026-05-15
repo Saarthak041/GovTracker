@@ -24,3 +24,4 @@ fabric-network/test-network/*.tx
 
 # VSCode
 .vscode/
+Main/blockchain-contracting-system/network/crypto-config/
