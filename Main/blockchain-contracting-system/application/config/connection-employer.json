@@ -13,7 +13,7 @@
     }
   },
   "channels": {
-    "directchannel": {
+    "channel1": {
       "orderers": ["orderer.example.com"],
       "peers": {
         "peer0.employer.example.com": {
@@ -100,7 +100,7 @@
       "url": "https://localhost:7054",
       "caName": "ca.employer.example.com",
       "tlsCACerts": {
-        "path": "../../network/crypto-config/peerOrganizations/employer.example.com/ca/ca.employer.example.com-cert.pem"
+        "path": "../network/crypto-config/peerOrganizations/employer.example.com/ca/ca.employer.example.com-cert.pem"
       },
       "httpOptions": {
         "verify": false

@@ -8,10 +8,17 @@ require('dotenv').config();
 const projectRoutes = require('./routes/projectRoutes');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+// Default to 3001 to avoid conflict with Next.js dev server (typically 3000)
+const PORT = Number(process.env.PORT || 3001);
+const DASHBOARD_ORIGIN = process.env.DASHBOARD_ORIGIN || 'http://localhost:3000';
 
 // Middleware
-app.use(cors());
+app.use(
+  cors({
+    origin: DASHBOARD_ORIGIN,
+    credentials: true,
+  })
+);
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -20,20 +27,21 @@ app.use('/api/projects', projectRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
-    res.json({ status: 'UP', timestamp: new Date().toISOString() });
+  res.json({ status: 'UP', timestamp: new Date().toISOString() });
 });
 
 // Error handler
 app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).json({
-        error: 'Internal Server Error',
-        message: err.message
-    });
+  console.error(err.stack);
+  res.status(500).json({
+    error: 'Internal Server Error',
+    message: err.message,
+  });
 });
 
 // Start server
 app.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
-    console.log(`📡 Health check: http://localhost:${PORT}/health`);
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`📡 Health check: http://localhost:${PORT}/health`);
+  console.log(`🌐 Allowed dashboard origin: ${DASHBOARD_ORIGIN}`);
 });
