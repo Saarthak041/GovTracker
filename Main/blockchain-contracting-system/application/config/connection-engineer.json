@@ -13,7 +13,7 @@
     }
   },
   "channels": {
-    "directchannel": {
+    "channel1": {
       "orderers": ["orderer.example.com"],
       "peers": {
         "peer0.employer.example.com": {

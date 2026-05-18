@@ -31,22 +31,24 @@ async function registerUser(orgName, mspId, username, role = 'client') {
             return;
         }
 
-        // Get admin identity from wallet
-        const adminIdentity = await wallet.get(`admin-${orgName.toLowerCase()}`);
-        if (!adminIdentity) {
-            console.log(`❌ Admin identity for ${orgName} does not exist. Run enrollAdmin.js first.`);
-            return;
-        }
+        // Enroll the CA admin on the fly
+        const adminEnrollment = await ca.enroll({ enrollmentID: 'admin', enrollmentSecret: 'adminpw' });
+        const adminIdentity = {
+            credentials: {
+                certificate: adminEnrollment.certificate,
+                privateKey: adminEnrollment.key.toBytes(),
+            },
+            mspId: mspId,
+            type: 'X.509',
+        };
+        const provider = wallet.getProviderRegistry().getProvider('X.509');
+        const adminUser = await provider.getUserContext(adminIdentity, 'admin');
 
-        // Build a user object for authenticating with the CA
-        const provider = wallet.getProviderRegistry().getProvider(adminIdentity.type);
-        const adminUser = await provider.getUserContext(adminIdentity, `admin-${orgName.toLowerCase()}`);
 
         // Register the user
         console.log(`📝 Registering user ${username} for ${orgName}...`);
         const secret = await ca.register(
             {
-                affiliation: `${orgName.toLowerCase()}.department1`,
                 enrollmentID: username,
                 role: role,
                 attrs: [
